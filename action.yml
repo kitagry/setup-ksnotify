@@ -1,0 +1,62 @@
+name: 'Setup ksnotify'
+description: 'Setup ksnotify CLI tool for kubectl diff notification'
+author: 'kitagry'
+
+branding:
+  icon: 'bell'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'Version of ksnotify to install (default: latest)'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install ksnotify
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        if [ "$VERSION" = "latest" ]; then
+          VERSION=$(curl -s https://api.github.com/repos/hirosassa/ksnotify/releases/latest | jq -r .tag_name)
+        fi
+
+        # Detect OS and set appropriate filename
+        OS=$(uname -s)
+        case $OS in
+          Linux)
+            FILENAME="ksnotify-x86_64-linux.tar.gz"
+            ;;
+          Darwin)
+            FILENAME="ksnotify-x86_64-darwin.tar.gz"
+            ;;
+          MINGW*|CYGWIN*|MSYS*)
+            FILENAME="ksnotify-x86_64-windows.zip"
+            ;;
+          *)
+            echo "Unsupported OS: $OS"
+            exit 1
+            ;;
+        esac
+
+        # Download and install ksnotify
+        DOWNLOAD_URL="https://github.com/hirosassa/ksnotify/releases/download/${VERSION}/${FILENAME}"
+        echo "Downloading ksnotify from: $DOWNLOAD_URL"
+
+        curl -sL "$DOWNLOAD_URL" -o "/tmp/${FILENAME}"
+
+        # Extract based on file type
+        if [[ "$FILENAME" == *.tar.gz ]]; then
+          tar -xzf "/tmp/${FILENAME}" -C /tmp
+        elif [[ "$FILENAME" == *.zip ]]; then
+          unzip -q "/tmp/${FILENAME}" -d /tmp
+        fi
+
+        # Make executable and move to PATH
+        chmod +x /tmp/ksnotify
+        sudo mv /tmp/ksnotify /usr/local/bin/
+
+        echo "ksnotify installed successfully"
+        ksnotify --version

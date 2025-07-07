@@ -1,0 +1,30 @@
+name: Test Setup ksnotify Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test action
+        uses: ./
+
+      - name: Verify ksnotify installation
+        run: |
+          which ksnotify
+          ksnotify --version
+
+      - name: Test ksnotify help
+        run: |
+          ksnotify --help
