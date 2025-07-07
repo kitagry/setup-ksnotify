@@ -23,18 +23,33 @@ runs:
           VERSION=$(curl -s https://api.github.com/repos/hirosassa/ksnotify/releases/latest | jq -r .tag_name)
         fi
 
-        # Detect OS and architecture
-        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        ARCH=$(uname -m)
-        case $ARCH in
-          x86_64) ARCH="amd64" ;;
-          aarch64) ARCH="arm64" ;;
-          arm64) ARCH="arm64" ;;
+        # Detect OS and set appropriate file extension
+        OS=$(uname -s)
+        case $OS in
+          Linux)
+            FILENAME="ksnotify-x86_64-linux.tar.gz"
+            EXTRACT_CMD="tar -xz"
+            ;;
+          Darwin)
+            FILENAME="ksnotify-x86_64-darwin.tar.gz"
+            EXTRACT_CMD="tar -xz"
+            ;;
+          MINGW*|CYGWIN*|MSYS*)
+            FILENAME="ksnotify-x86_64-windows.zip"
+            EXTRACT_CMD="unzip -q"
+            ;;
+          *)
+            echo "Unsupported OS: $OS"
+            exit 1
+            ;;
         esac
 
         # Download and install ksnotify
-        DOWNLOAD_URL="https://github.com/hirosassa/ksnotify/releases/download/${VERSION}/ksnotify_${OS}_${ARCH}.tar.gz"
-        curl -sL "$DOWNLOAD_URL" | tar -xz -C /tmp
+        DOWNLOAD_URL="https://github.com/hirosassa/ksnotify/releases/download/${VERSION}/${FILENAME}"
+        echo "Downloading ksnotify from: $DOWNLOAD_URL"
+        
+        curl -sL "$DOWNLOAD_URL" -o "/tmp/${FILENAME}"
+        cd /tmp && $EXTRACT_CMD "${FILENAME}"
 
         # Make executable and move to PATH
         chmod +x /tmp/ksnotify
