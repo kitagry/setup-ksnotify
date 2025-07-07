@@ -23,20 +23,17 @@ runs:
           VERSION=$(curl -s https://api.github.com/repos/hirosassa/ksnotify/releases/latest | jq -r .tag_name)
         fi
 
-        # Detect OS and set appropriate file extension
+        # Detect OS and set appropriate filename
         OS=$(uname -s)
         case $OS in
           Linux)
             FILENAME="ksnotify-x86_64-linux.tar.gz"
-            EXTRACT_CMD="tar -xz"
             ;;
           Darwin)
             FILENAME="ksnotify-x86_64-darwin.tar.gz"
-            EXTRACT_CMD="tar -xz"
             ;;
           MINGW*|CYGWIN*|MSYS*)
             FILENAME="ksnotify-x86_64-windows.zip"
-            EXTRACT_CMD="unzip -q"
             ;;
           *)
             echo "Unsupported OS: $OS"
@@ -47,9 +44,15 @@ runs:
         # Download and install ksnotify
         DOWNLOAD_URL="https://github.com/hirosassa/ksnotify/releases/download/${VERSION}/${FILENAME}"
         echo "Downloading ksnotify from: $DOWNLOAD_URL"
-        
+
         curl -sL "$DOWNLOAD_URL" -o "/tmp/${FILENAME}"
-        cd /tmp && $EXTRACT_CMD "${FILENAME}"
+
+        # Extract based on file type
+        if [[ "$FILENAME" == *.tar.gz ]]; then
+          tar -xzf "/tmp/${FILENAME}" -C /tmp
+        elif [[ "$FILENAME" == *.zip ]]; then
+          unzip -q "/tmp/${FILENAME}" -d /tmp
+        fi
 
         # Make executable and move to PATH
         chmod +x /tmp/ksnotify
